@@ -39,11 +39,12 @@ def stringify(chaine) :
 # --------------------------------------------------------------------
 
 def popen_player(command, console) :
+    escaped_cmd = list(map(stringify, command))
     startupinfo = subprocess.STARTUPINFO()
     if not console :
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     return subprocess.Popen(
-        map(stringify, command),
+        escaped_cmd,
         startupinfo=startupinfo,
         close_fds=ON_POSIX,
     )
@@ -51,11 +52,12 @@ def popen_player(command, console) :
 # --------------------------------------------------------------------
 
 def check_player(command) :
+    escaped_cmd = list(map(stringify, command))
     try :
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         proc = subprocess.Popen(
-            map(stringify, command),
+            escaped_cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             startupinfo=startupinfo,
@@ -89,6 +91,7 @@ class MediaPlayer(ABC) :
         }
         options.update(kwargs)
         self.console = options['console']
+        self.options = []
 
     @classmethod
     def getList(cls) :
@@ -104,6 +107,9 @@ class MediaPlayer(ABC) :
                 return cls(id=player)
 
         return cls(id='dummy')
+
+    def add_options(self, *options) :
+        self.options.extend(options)
         
     @abc.abstractmethod
     def play(self, title, video_uri) :
@@ -140,6 +146,7 @@ class Player_mpv(MediaPlayer) :
             '--title', title,
             video_uri
         ]
+        command[1:1] = self.options
         return popen_player(command, self.console)
 
     def check(self) :
@@ -159,8 +166,9 @@ class Player_ffplay(MediaPlayer) :
             self.program,
             '-window_title', title,
             '-loglevel', 'quiet',
-            video_uri   
+            '-i', video_uri   
         ]
+        command[1:1] = self.options
         return popen_player(command, self.console)
 
     def check(self) :
@@ -182,6 +190,7 @@ class Player_vlc(MediaPlayer) :
             video_uri,
             'vlc://quit'
         ]
+        command[1:1] = self.options
         return popen_player(command, self.console)
 
     def check(self) :

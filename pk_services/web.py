@@ -23,8 +23,8 @@ except ImportError :
     import urllib.request as requests
     import urllib.parse as urlparse
 
+from .core import Service
 from .exceptions import ServiceError
-from .types import Service
 from .parsers import CharsetHTMLParser, MediaHTMLParser
 
 # --------------------------------------------------------------------

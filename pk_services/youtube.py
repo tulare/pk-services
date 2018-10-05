@@ -14,8 +14,8 @@ log.debug('MODULE {}'.format(__name__))
 
 import youtube_dl
 
-from .exceptions import ServiceError
 from .types import Service
+from .core import ServiceError
 
 # --------------------------------------------------------------------
 
