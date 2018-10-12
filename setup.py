@@ -1,17 +1,13 @@
 # -*- encoding: utf-8 -*-
 
+import os
+import sys
+from pkg_resources import Requirement
 from setuptools import setup, find_packages
 
 # Get version without import module
 exec(compile(open('pk_services/version.py').read(),
              'pk_services/version.py', 'exec'))
-
-install_requires = [
-    # List your project dependencies here.
-    # For more details, see:
-    # https://setuptools.readthedocs.io/en/latest/setuptools.html#declaring-dependencies
-    'youtube-dl>=2018.9',
-]
 
 with open('README.md') as f :
     readme = f.read()
@@ -30,5 +26,5 @@ setup(
     license=license,
     packages=find_packages(exclude=('tests',)),
     zip_safe=False,
-    install_requires=install_requires
+    #install_requires=[defined in setup.cfg],
 )
