@@ -65,13 +65,19 @@ class YoutubeService(Service) :
 
     def print_formats(self) :
         assert self.validate()
-        
-        for fmt in self['formats'] :
-            print(
-                '{}'.format(
-                    fmt['format']
+
+        if '_type' in self.infos :
+            dct = self['entries'][0]
+        else :
+            dct = self.infos
+
+        if 'formats' in dct :
+            for fmt in dct['formats'] :
+                print(
+                    '{}'.format(
+                        fmt['format']
+                    )
                 )
-            )
         
     def select_format(self, max_height=None) :
         """
@@ -79,23 +85,32 @@ class YoutubeService(Service) :
         A revoir : quelques lourdeurs dues aux noms des champs qui diffèrent
         en fonction de l'extracteur
         """
+
+        log.debug("select_format : max_height={}".format(max_height))
         assert self.validate()
 
+        # cas playlist
+        if '_type' in self.infos :
+            dct = self['entries'][0]
+        else :
+            dct = self.infos
+
         # pas de liste de formats
-        if self['formats'] is None :
-            return self
+        if 'formats' not in dct :
+            return dct
 
         # identifier la clé utilisée
-        if 'quality' in self._infos :
+        if 'quality' in dct :
             key = 'quality'
-        if 'height' in self._infos :
+        if 'height' in dct :
             key = 'height'
+        log.debug("select_format : key='{}'".format(key))
 
         # filtre pour ne garder que les formats Video
         video_formats = list(
             filter(
                 lambda f : key in f,
-                self['formats']
+                dct['formats']
             )
         )
 
@@ -131,6 +146,7 @@ class YoutubeService(Service) :
                     key = lambda f : f[key]
                 )
 
+        log.debug(("select_format : " + key + "={s[" + key + "]}").format(s=selected))
         return selected
 
     def video(self, max_height=None) :
@@ -144,5 +160,6 @@ class YoutubeService(Service) :
             selected['format']
         )
 
+        log.debug("video : title='{}'".format(title))
+        log.debug("video : url='{}'".format(selected['url']))
         return title, selected['url']
-        
