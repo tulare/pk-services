@@ -1,10 +1,3 @@
-# -*- encoding: utf-8 -*-
-from __future__ import (
-    absolute_import,
-    print_function, division,
-    unicode_literals
-)
-
 import abc
 import os
 import sys
@@ -12,34 +5,13 @@ import subprocess
 
 __all__ = [ 'MediaPlayer', ]
 
-# compatible with Python 2.x *and* 3.x
-PY3 = sys.version_info > (3,)
-ABC = abc.ABCMeta(str('ABC'), (object,), { '__slots__' : ()})
-
 # options de démarrage pour Popen
 ON_POSIX = str('posix') in sys.builtin_module_names
 
 # --------------------------------------------------------------------
 
-def stringify(chaine) :
-    if PY3 :
-        return chaine
-
-    if isinstance(chaine, unicode) :
-        return chaine.encode('cp1252')
-
-    if isinstance(chaine, str) :
-        try :
-            uni = chaine.decode('utf8')
-        except UnicodeDecodeError :
-            uni = chaine.decode(sys.stdout.encoding)
-
-        return uni.encode('cp1252')
-    
-# --------------------------------------------------------------------
-
 def popen_player(command, console) :
-    escaped_cmd = list(map(stringify, command))
+    escaped_cmd = list(map(str, command))
     startupinfo = subprocess.STARTUPINFO()
     if not console :
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
@@ -52,7 +24,7 @@ def popen_player(command, console) :
 # --------------------------------------------------------------------
 
 def check_player(command) :
-    escaped_cmd = list(map(stringify, command))
+    escaped_cmd = list(map(str, command))
     try :
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
@@ -71,8 +43,10 @@ def check_player(command) :
     
 # --------------------------------------------------------------------
 
-class MediaPlayer(ABC) :
-    """Fabrique Abstraite de player"""
+class MediaPlayer(abc.ABC) :
+    """
+    Fabrique Abstraite de player
+    """
 
     def __new__(cls, *args, **kwargs) :
         for sub in cls.__subclasses__() :
@@ -135,17 +109,23 @@ class Player_dummy(MediaPlayer) :
 # --------------------------------------------------------------------
 
 class Player_mpv(MediaPlayer) :
-    """Implementation Concrete : mpv """
+    """
+    Implementation Concrete : mpv
+    """
 
     id_player = 'mpv'
     program = 'mpv.exe'
 
+    def __init__(self, *args, **kwargs) :
+        options = { 'console' : True }
+        options.update(kwargs)
+        super().__init__(*args, **options)
+
     def play(self, title, video_uri) :
-        command = [
-            self.program,
-            '--title', title,
-            video_uri
-        ]
+        command = [ self.program ]
+        if title :
+            command.append(f'--title={title}')
+        command.append(video_uri)
         command[1:1] = self.options
         return popen_player(command, self.console)
 
@@ -155,11 +135,32 @@ class Player_mpv(MediaPlayer) :
         
 # --------------------------------------------------------------------
 
+class Player_mpv720p(Player_mpv, MediaPlayer) :
+    """
+    Implementation Concrete : mpv 720p
+    """
+
+    id_player = 'mpv720p'
+    program = 'mpv.exe'
+
+    def __init__(self, *args, **kwargs) :
+        super().__init__(*args, **kwargs)
+        self.add_options('--ytdl-format=[height<=?720]/best')
+        
+# --------------------------------------------------------------------
+
 class Player_ffplay(MediaPlayer) :
-    """Implementation Concrete : ffplay"""
+    """
+    Implementation Concrete : ffplay
+    """
 
     id_player = 'ffplay'
     program = 'ffplay.exe'
+
+    def __init__(self, *args, **kwargs) :
+        options = { 'console' : True }
+        options.update(kwargs)
+        super().__init__(*args, **options)
 
     def play(self, title, video_uri) :
         command = [
@@ -178,7 +179,9 @@ class Player_ffplay(MediaPlayer) :
 # --------------------------------------------------------------------
 
 class Player_vlc(MediaPlayer) :
-    """Implementation Concrete : vlc"""
+    """
+    Implementation Concrete : vlc
+    """
 
     id_player = 'vlc'
     program = 'C:/Program Files/VideoLAN/VLC/vlc.exe'

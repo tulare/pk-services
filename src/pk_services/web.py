@@ -1,10 +1,3 @@
-# -*- encoding: utf-8 -*-
-from __future__ import (
-    absolute_import,
-    print_function, division,
-    unicode_literals
-)
-
 __all__ = [ 'WebService', 'WebRequest', 'GrabService' ]
 
 # logging
@@ -16,16 +9,12 @@ import os
 import re
 import json
 
-try : # python 2.7
-    import urllib2 as requests
-    import urlparse
-except ImportError :
-    import urllib.request as requests
-    import urllib.parse as urlparse
+import urllib.request
+import urllib.parse
 
 from .core import Service
 from .exceptions import ServiceError
-from .parsers import CharsetHTMLParser, MediaHTMLParser
+from .parsers import CharsetHTMLParser, MediaHTMLParser, ImageLinkHTMLParser
 
 # --------------------------------------------------------------------
 
@@ -34,7 +23,7 @@ class WebService(Service) :
     @Service.opener.setter
     def opener(self, opener) :
         if opener is None :
-            self._opener = requests.build_opener()
+            self._opener = urllib.request.build_opener()
         else :
             self._opener = opener
 
@@ -56,23 +45,24 @@ class WebService(Service) :
         self.opener.addheaders = headers.items()
 
     def test(self) :
-        response = self.opener.open('http://httpbin.org/get?option=value')
+        url = 'https://httpbin.org/get?option=value'
+        request = urllib.request.Request(url)
+        response = self.opener.open(request)
         return json.load(response)
 
     @classmethod
     def domain(cls, url) :
-        url_split = urlparse.urlsplit(url)
+        url_split = urllib.parse.urlsplit(url)
         return url_split.netloc
-        
 
 # --------------------------------------------------------------------
 
 class WebRequest(WebService) :
     def __call__(self, url) :
-        request = requests.Request(url)
+        request = urllib.request.Request(url)
         try :
             response = self.opener.open(request)
-        except requests.URLError as e:
+        except urllib.request.URLError as e:
             if hasattr(e, 'reason') :
                 raise ServiceError(e.reason)
             elif hasattr(e, 'code') :
@@ -87,21 +77,23 @@ class GrabService(WebService) :
     def __init__(self, opener=None) :
         super(GrabService, self).__init__(opener)
 
-        self.parser = MediaHTMLParser()
+        self.parser = ImageLinkHTMLParser()
+        #self.parser = MediaHTMLParser()
         self._url = None
         self._head = '.*'
         self._ext = '',
 
     def _grab(self, url) :
         charset_parser = CharsetHTMLParser()
-        request = requests.Request(url)
+        request = urllib.request.Request(url)
         try :
             response = self.opener.open(request)
             page = response.read()
             charset_parser.parse(page)
-            self.parser.parse(page.decode(charset_parser.charset))
+            #self.parser.parse(page.decode(charset_parser.charset))
+            self.parser.parse(page.decode(charset_parser.charset), url)
             self._url = url
-        except requests.URLError as e:
+        except urllib.request.URLError as e:
             if hasattr(e, 'reason') :
                 raise ServiceError(e.reason)
             elif hasattr(e, 'code') :
@@ -120,7 +112,7 @@ class GrabService(WebService) :
 
     @property
     def base(self) :
-        return urlparse.urljoin(self._url, '/')
+        return urllib.parse.urljoin(self._url, '/')
 
     @property
     def head(self) :
@@ -139,47 +131,33 @@ class GrabService(WebService) :
         self._ext = tuple(ext)
 
     @property
-    def images(self) :
+    def images_links(self) :
         re_head = re.compile(self.head)
-        log.debug('IMAGES head="{.pattern}"'.format(re_head))
+        log.debug('IMAGES_LINKS head="{.pattern}"'.format(re_head))
         re_ext = re.compile('\.('+'|'.join(self.ext)+')\?*')
-        log.debug('IMAGES ext="{.pattern}"'.format(re_ext))
+        log.debug('IMAGES_LINKS ext="{.pattern}"'.format(re_ext))
 
-        images = list()
+        images_links = {}
         try :
-            images = [
-                urlparse.urljoin(self.url, image)
-                for image in filter(
-                    lambda img : (
-                        re_head.search(os.path.basename(img))
-                        and re_ext.search(img)
-                    ),
-                    self.parser.images
-                )
-            ]
+            images_links = {
+                urllib.parse.urljoin(self.url, image) : urllib.parse.urljoin(self.url, link)
+                for image, link in self.parser.images_links.items()
+                if re_head.search(os.path.basename(image))
+                and re_ext.search(image)
+            }
         except Exception as e :
             log.debug(repr(e))
 
-        return images
+        return images_links
+
+    @property
+    def images(self) :
+        return list(self.images_links.keys())
 
     @property
     def links(self) :
-        re_head = re.compile(self.head)
-        log.debug('LINKS head="{.pattern}"'.format(re_head))
+        return list(self.images_links.values())
 
-        links = list()
-        try :
-            links = [
-            urlparse.urljoin(self.url, link)
-                for link in filter(
-                    lambda lnk :
-                        re_head.search(urlparse.urlsplit(lnk).path),
-                    self.parser.links
-                )
-            ]
-        except Exception as e :
-            log.debug(repr(e))
-    
-        return links
+
 
 # --------------------------------------------------------------------
