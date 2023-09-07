@@ -6,6 +6,8 @@ name = "pypi"
 [packages]
 
 [dev-packages]
+virtualenv = "*"
 build = "*"
+nose2 = "*"
 
 [requires]
