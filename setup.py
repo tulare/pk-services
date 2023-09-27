@@ -28,14 +28,14 @@ setup(
     author='Tulare Regnus',
     author_email='tulare.paxgalactica@gmail.com',
     license=license(),
-    package_dir={'pk_services' : 'src/pk_services'},
+    package_dir={'' : 'src'},
     packages=['pk_services'],
     package_data={'pk_services' : []},
     include_package_data=True,
     install_requires=[
         'PySocks>=1.7.1',
         'lxml>=4.9.3',
-        'yt-dlp>=2023.7.6'
+        'yt-dlp>=2023.9.24'
     ],
     scripts=[],
     entry_points={
