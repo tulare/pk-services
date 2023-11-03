@@ -6,9 +6,10 @@ log = logging.getLogger(__name__)
 log.debug('MODULE {}'.format(__name__))
 
 import json
+import pathlib
 import urllib.parse
 import html.parser
-import lxml.html
+import lxml.etree
 
 # --------------------------------------------------------------------
 
@@ -75,24 +76,14 @@ class ImageLinkHTMLParser :
     def __init__(self) :
         self._images_links = {}
         self._domain_parser_config = DomainParserConfig()
+        self._ns = lxml.etree.FunctionNamespace('http://mydomain.org/functions')
+        self._ns.prefix = 'fn'
+        self._ns['urljoin'] = self.urljoin
 
     @property
     def config(self) :
         return self._domain_parser_config
 
-    def parse(self, data, url) :
-        self._images_links = {}
-        motif_image, motif_link = self._domain_parser_config.find_url(url)
-        self.add_parse(data, motif_image, motif_link)
-
-    def add_parse(self, data, motif_image, motif_link) :
-        tree = lxml.html.fromstring(data)
-        self._images_links.update(zip(
-            tree.xpath(motif_image),
-            tree.xpath(motif_link)
-        ))
-        log.debug(f"add_parse: {motif_image} / {motif_link} : {len(self.images_links)}")
-        
     @property
     def images(self) :
         return list(self.images_links.keys())
@@ -108,6 +99,23 @@ class ImageLinkHTMLParser :
         except AttributeError :
             il = {}
         return il
+
+    def urljoin(self, context, nodes, baseurl) : 
+            return [f"{urllib.parse.urljoin(baseurl, pathlib.Path(n).stem)}" for n in nodes]
+
+    def parse(self, data, url) :
+        self._images_links = {}
+        motif_image, motif_link = self._domain_parser_config.find_url(url)
+        self.add_parse(data, motif_image, motif_link)
+
+    def add_parse(self, data, motif_image, motif_link) :
+        tree = lxml.etree.HTML(data)
+        self._images_links.update(zip(
+            tree.xpath(motif_image),
+            tree.xpath(motif_link)
+        ))
+        log.debug(f"add_parse: {motif_image} / {motif_link} : {len(self.images_links)}")
+        
 
 # --------------------------------------------------------------------
 
