@@ -117,9 +117,23 @@ class Player_mpv(MediaPlayer) :
     program = 'mpv.exe'
 
     def __init__(self, *args, **kwargs) :
-        options = { 'console' : True }
+        options = {
+            'console' : True,
+            'nosub' : True,
+            'ytdlfmt' : 'ytdl',
+            'fmtsort' : 'hasvid',
+        }
         options.update(kwargs)
         super().__init__(*args, **options)
+        self.mpv_options(options)
+
+    def mpv_options(self, options) :
+        if options.get('nosub') :
+            self.add_options('--no-sub')
+        self.add_options(
+            f"--ytdl-format={options.get('ytdlfmt')}",
+            f"--ytdl-raw-options=format-sort=[{options.get('fmtsort')}]",
+        )
 
     def play(self, title, video_uri) :
         command = [ self.program ]
@@ -132,7 +146,7 @@ class Player_mpv(MediaPlayer) :
     def check(self) :
         command = [ self.program, '--version' ]
         return check_player(command)
-        
+
 # --------------------------------------------------------------------
 
 class Player_mpv720p(Player_mpv, MediaPlayer) :
@@ -141,11 +155,11 @@ class Player_mpv720p(Player_mpv, MediaPlayer) :
     """
 
     id_player = 'mpv720p'
-    program = 'mpv.exe'
 
     def __init__(self, *args, **kwargs) :
-        super().__init__(*args, **kwargs)
-        self.add_options('--ytdl-format=[height<=?720]/best')
+        options = { 'fmtsort' : 'res:720,+tbr' }
+        options.update(kwargs)
+        super().__init__(*args, **options)
         
 # --------------------------------------------------------------------
 
