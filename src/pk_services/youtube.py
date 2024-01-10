@@ -21,8 +21,8 @@ def grab_height(chaine) :
 
 class YoutubeService(Service) :
 
-    def __init__(self) :
-        super(YoutubeService, self).__init__(opener=None)
+    def __init__(self, *args, **kwargs) :
+        super().__init__(opener=None)
         self._url = None
         self._current = 0
         self._infos = {}
@@ -33,6 +33,11 @@ class YoutubeService(Service) :
             'logger' : log,
             'verbose' : True
         }
+        self._set_params(kwargs)
+
+    def _set_params(self, params) :
+        if 'format_sort' in params :
+            self.format_sort = params['format_sort']
 
     def __getitem__(self, key) :
         # implements : self[key]
@@ -47,6 +52,16 @@ class YoutubeService(Service) :
         except (youtube_dl.DownloadError, TypeError) as e :
             log.error(e)
             self._infos = {'error' : e }
+
+    @property
+    def format_sort(self) :
+        return self._params.get('format_sort', [])
+
+    @format_sort.setter
+    def format_sort(self, fmtsort) :
+        self._params['format_sort'] = fmtsort.split(',')
+        if self._url is not None :
+            self.update()
 
     @property
     def skip_download(self) :
@@ -107,8 +122,16 @@ class YoutubeService(Service) :
         self.update()
 
     @property
+    def selected_formats(self) :
+        return '+'.join(fmt['format_id'] for fmt in self['requested_formats'] or [self])
+
+    @property
+    def resolution(self) :
+        return self['resolution'] or 'unknown'
+
+    @property
     def title(self) :
-        return self['title']
+        return f"[{self.resolution}] {self['title']}"
 
     @property
     def id(self) :
