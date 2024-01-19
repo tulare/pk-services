@@ -43,6 +43,62 @@ def check_player(command) :
     
 # --------------------------------------------------------------------
 
+class MPVOptions :
+    #
+    def __init__(self) :
+        self._options = set()
+        self._raw_options = {}
+        self._ytdl_format = []
+    #
+    @property
+    def options(self) :
+        options = list(self._options)
+        options.append(self.formats)
+        options.append(self.raw_options)
+        return options
+    #
+    @property
+    def formats(self) :
+        options = '+'.join(self._ytdl_format)
+        return f"--ytdl-format={options or 'ytdl'}"
+    #
+    @formats.setter
+    def formats(self, formats) :
+        if not isinstance(formats, tuple) :
+            formats = formats,
+        print(formats, type(formats))
+        self._ytdl_format = [ str(fmt) for fmt in formats if fmt ]
+    #
+    @property
+    def raw_options(self) :
+        options = ','.join(f"{key}=[{value}]" for key, value in self._raw_options.items())
+        return f"--ytdl-raw-options={options}"
+    #
+    def set_options(self, *options) :
+        for option in options :
+            if option :
+                self._options.add(f"--{option}")
+    #
+    def clear_options(self, *options) :
+        for option in options :
+            self._options.discard(f"--{option}")
+    #
+    def set_formats(self, *formats) :
+        self._ytdl_format = [ str(fmt) for fmt in formats if fmt ]
+    #
+    def set_raw_options(self, *options) :
+        # grouper les options par couple (option, valeur)
+        for i in range(0, len(options), 2) :
+            optionsval = options[i:i+2]
+            option, valeur = optionsval if len(optionsval) == 2 else (optionsval[0], '')
+            self._raw_options[option] = str(valeur or '')
+    #
+    def clear_raw_options(self, *options) :
+        for option in options :
+            self._raw_options.pop(option, None)
+
+# --------------------------------------------------------------------
+
 class MediaPlayer(abc.ABC) :
     """
     Fabrique Abstraite de player
@@ -125,22 +181,27 @@ class Player_mpv(MediaPlayer) :
         }
         options.update(kwargs)
         super().__init__(*args, **options)
-        self.mpv_options(options)
+        self._mpv_options = MPVOptions()
+        self.init_mpv_options(options)
 
-    def mpv_options(self, options) :
-        if options.get('nosub') :
-            self.add_options('--no-sub')
-        self.add_options(
-            f"--ytdl-format={options.get('ytdlfmt')}",
-            f"--ytdl-raw-options=format-sort=[{options.get('fmtsort')}]",
-        )
+    @property
+    def mpv_options(self) :
+        return self._mpv_options
+
+    def init_mpv_options(self, options) :
+        if options.get('nosub', False) :
+            self.mpv_options.set_options('no-sub')
+        else :
+            self.mpv_options.clear_options('no-sub')
+        self.mpv_options.set_formats(options.get('ytdlfmt','ytdl'))
+        self.mpv_options.set_raw_options('format-sort', options.get('fmtsort','hasvid'))
 
     def play(self, title, video_uri) :
         command = [ self.program ]
         if title :
             command.append(f'--title={title}')
         command.append(video_uri)
-        command[1:1] = self.options
+        command[1:1] = self.mpv_options.options
         return popen_player(command, self.console)
 
     def check(self) :
