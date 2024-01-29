@@ -8,6 +8,7 @@ log.debug('MODULE {}'.format(__name__))
 import os
 import re
 import json
+import codecs
 
 import urllib.request
 import urllib.parse
@@ -90,8 +91,10 @@ class GrabService(WebService) :
             response = self.opener.open(request)
             page = response.read()
             charset_parser.parse(page)
+            decoded_page = codecs.decode(page, encoding=charset_parser.charset, errors='replace')
             #self.parser.parse(page.decode(charset_parser.charset))
-            self.parser.parse(page.decode(charset_parser.charset), url)
+            #self.parser.parse(page.decode(charset_parser.charset), url)
+            self.parser.parse(decoded_page, url)
             self._url = url
         except urllib.request.URLError as e:
             if hasattr(e, 'reason') :
