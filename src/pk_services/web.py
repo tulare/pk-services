@@ -1,4 +1,4 @@
-__all__ = [ 'WebService', 'WebRequest', 'GrabService' ]
+# -*- coding: utf-8 -*-
 
 # logging
 import logging
@@ -7,16 +7,16 @@ log.debug('MODULE {}'.format(__name__))
 
 import os
 import re
-import json
 import codecs
 
 import requests
-import urllib.request
 import urllib.parse
 
 from .core import Service
 from .exceptions import ServiceError
-from .parsers import CharsetHTMLParser, MediaHTMLParser, ImageLinkHTMLParser
+from .parsers import CharsetHTMLParser, ImageLinkHTMLParser
+
+__all__ = [ 'WebService', 'WebRequest', 'GrabService' ]
 
 # --------------------------------------------------------------------
 
@@ -25,44 +25,49 @@ class WebService(Service) :
     @Service.opener.setter
     def opener(self, opener) :
         if opener is None :
-            self._opener = urllib.request.build_opener()
+            self._opener = requests.Session()
         else :
             self._opener = opener
 
     @property
     def headers(self) :
-        return {
-            header[0] : header[1]
-            for header in self.opener.addheaders
-        }
+        return self._opener.headers
 
     @property
     def user_agent(self) :
-        return self.headers.get('User-agent')
+        return self.headers.get('User-Agent')
 
     @user_agent.setter
     def user_agent(self, user_agent) :
-        headers = self.headers
-        headers['User-agent'] = user_agent
-        self.opener.addheaders = headers.items()
+        self.headers.update({'User-Agent' : user_agent})
 
     def test(self) :
         url = 'https://httpbin.org/get?option=value'
         response = self.get(url)
-        return json.load(response)
+        return response.json()
 
     def get(self, url) :
-        request = urllib.request.Request(url)
         try :
-            response = self.opener.open(request)
-        except urllib.request.URLError as e:
-            if hasattr(e, 'reason') :
-                raise ServiceError(e.reason)
-            elif hasattr(e, 'code') :
-                raise ServiceError(e.code)
-        else :
-            return response
-            
+            response = self.opener.get(url)
+            response.raise_for_status()
+
+        except requests.exceptions.MissingSchema as e :
+            raise ServiceError(f'MissingSchema - {e}')
+
+        except requests.exceptions.InvalidSchema as e :
+            raise ServiceError(f'InvalidSchema - {e}')
+
+        except requests.exceptions.InvalidURL as e :
+            raise ServiceError(f'InvalidURL - {e}')
+
+        except requests.ConnectionError as e :
+            raise ServiceError(f'ConnectionError - {e}')
+
+        except requests.HTTPError as e :
+            raise ServiceError(f'HTTPError - {e}')
+        
+        return response
+        
     @classmethod
     def domain(cls, url) :
         url_split = urllib.parse.urlsplit(url)
@@ -71,6 +76,7 @@ class WebService(Service) :
 # --------------------------------------------------------------------
 
 class WebRequest(WebService) :
+
     def __call__(self, url) :
         return self.get(url)
 
@@ -90,12 +96,13 @@ class GrabService(WebService) :
         charset_parser = CharsetHTMLParser()
         try :
             response = self.get(url)
-            page = response.read()
+            page = response.content
             charset_parser.parse(page)
+            log.debug(f'charset - {charset_parser.charset}')
             decoded_page = codecs.decode(page, encoding=charset_parser.charset, errors='replace')
-            #self.parser.parse(page.decode(charset_parser.charset))
-            #self.parser.parse(page.decode(charset_parser.charset), url)
-            self.parser.parse(decoded_page, url)
+            log.debug(f'{decoded_page == response.text}')
+            #self.parser.parse(decoded_page, url)
+            self.parser.parse(response.text, url)
             self._url = url
         except ServiceError as e :
             log.error(f'ServiceError - {e}')
@@ -159,7 +166,5 @@ class GrabService(WebService) :
     @property
     def links(self) :
         return list(self.images_links.values())
-
-
 
 # --------------------------------------------------------------------

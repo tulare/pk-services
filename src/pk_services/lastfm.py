@@ -63,9 +63,8 @@ class LastFmPage :
     def _load(self, url) :
         ws = WebService()
         ws.user_agent = self.user_agent
-        #req = ws.opener.open(url)
         req = ws.get(url)
-        bindata = req.read()
+        bindata = req.content
         charset_parser = CharsetHTMLParser()
         charset_parser.parse(bindata)
         data = bindata.decode(charset_parser.charset)

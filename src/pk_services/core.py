@@ -1,26 +1,27 @@
 __all__ = [ 'Tor', 'Service' ]
 
+import os
 import socks
 import socket
 
 class Tor :
-    socketSocketMemo = socket.socket
+    enabled = False
     
     @classmethod
     def isEnabled(cls) :
-        return not(cls.socketSocketMemo == socket.socket)
+        return cls.enabled
     
     @classmethod
     def enable(cls) :
-        if not cls.isEnabled() :
-            socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, 'localhost', 9150)
-            socket.socket = socks.socksocket
+        os.environ['HTTP_PROXY'] = 'socks5h://localhost:9150'
+        os.environ['HTTPS_PROXY'] = 'socks5h://localhost:9150'
+        cls.enabled = True
 
     @classmethod
     def disable(cls) :
-        if cls.isEnabled() :
-            socks.setdefaultproxy()
-            socket.socket = cls.socketSocketMemo
+        del os.environ['HTTP_PROXY']
+        del os.environ['HTTPS_PROXY']
+        cls.enabled = False
 
 class Service :
     """
