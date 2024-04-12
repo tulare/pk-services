@@ -33,9 +33,10 @@ setup(
     package_data={'pk_services' : []},
     include_package_data=True,
     install_requires=[
+        'requests>=2.31.0',
         'PySocks>=1.7.1',
         'lxml>=4.9.3',
-        'yt-dlp>=2023.9.24'
+        'yt-dlp>=2024.4.9'
     ],
     scripts=[],
     entry_points={

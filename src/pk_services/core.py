@@ -3,8 +3,6 @@ __all__ = [ 'Tor', 'Service' ]
 import socks
 import socket
 
-socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, '127.0.0.1', 9150)
-
 class Tor :
     socketSocketMemo = socket.socket
     
@@ -15,11 +13,13 @@ class Tor :
     @classmethod
     def enable(cls) :
         if not cls.isEnabled() :
+            socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, 'localhost', 9150)
             socket.socket = socks.socksocket
 
     @classmethod
     def disable(cls) :
         if cls.isEnabled() :
+            socks.setdefaultproxy()
             socket.socket = cls.socketSocketMemo
 
 class Service :

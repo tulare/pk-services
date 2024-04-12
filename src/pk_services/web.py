@@ -10,6 +10,7 @@ import re
 import json
 import codecs
 
+import requests
 import urllib.request
 import urllib.parse
 
@@ -31,35 +32,26 @@ class WebService(Service) :
     @property
     def headers(self) :
         return {
-            header[0].lower() : header[1]
+            header[0] : header[1]
             for header in self.opener.addheaders
         }
 
     @property
     def user_agent(self) :
-        return self.headers.get('user-agent')
+        return self.headers.get('User-agent')
 
     @user_agent.setter
     def user_agent(self, user_agent) :
         headers = self.headers
-        headers['user-agent'] = user_agent
+        headers['User-agent'] = user_agent
         self.opener.addheaders = headers.items()
 
     def test(self) :
         url = 'https://httpbin.org/get?option=value'
-        request = urllib.request.Request(url)
-        response = self.opener.open(request)
+        response = self.get(url)
         return json.load(response)
 
-    @classmethod
-    def domain(cls, url) :
-        url_split = urllib.parse.urlsplit(url)
-        return url_split.netloc
-
-# --------------------------------------------------------------------
-
-class WebRequest(WebService) :
-    def __call__(self, url) :
+    def get(self, url) :
         request = urllib.request.Request(url)
         try :
             response = self.opener.open(request)
@@ -70,25 +62,34 @@ class WebRequest(WebService) :
                 raise ServiceError(e.code)
         else :
             return response
+            
+    @classmethod
+    def domain(cls, url) :
+        url_split = urllib.parse.urlsplit(url)
+        return url_split.netloc
+
+# --------------------------------------------------------------------
+
+class WebRequest(WebService) :
+    def __call__(self, url) :
+        return self.get(url)
 
 # --------------------------------------------------------------------
 
 class GrabService(WebService) :
 
     def __init__(self, opener=None) :
-        super(GrabService, self).__init__(opener)
+        super().__init__(opener)
 
         self.parser = ImageLinkHTMLParser()
-        #self.parser = MediaHTMLParser()
         self._url = None
         self._head = '.*'
         self._ext = '',
 
     def _grab(self, url) :
         charset_parser = CharsetHTMLParser()
-        request = urllib.request.Request(url)
         try :
-            response = self.opener.open(request)
+            response = self.get(url)
             page = response.read()
             charset_parser.parse(page)
             decoded_page = codecs.decode(page, encoding=charset_parser.charset, errors='replace')
@@ -96,11 +97,9 @@ class GrabService(WebService) :
             #self.parser.parse(page.decode(charset_parser.charset), url)
             self.parser.parse(decoded_page, url)
             self._url = url
-        except urllib.request.URLError as e:
-            if hasattr(e, 'reason') :
-                raise ServiceError(e.reason)
-            elif hasattr(e, 'code') :
-                raise ServiceError(e.code)            
+        except ServiceError as e :
+            log.error(f'ServiceError - {e}')
+            raise ServiceError(f'ServiceError - {e}')
             
     def update(self) :
         self._grab(self.url)
