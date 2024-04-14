@@ -143,7 +143,7 @@ class GrabService(WebService) :
     def images_links(self) :
         re_head = re.compile(self.head)
         log.debug('IMAGES_LINKS head="{.pattern}"'.format(re_head))
-        re_ext = re.compile('\.('+'|'.join(self.ext)+')\?*')
+        re_ext = re.compile('\\.('+'|'.join(self.ext)+')\\?*')
         log.debug('IMAGES_LINKS ext="{.pattern}"'.format(re_ext))
 
         images_links = {}
