@@ -38,7 +38,8 @@ def check_player(command) :
     except WindowsError :
         return False
 
-    returncode = proc.wait()
+    stdout, stderr = proc.communicate()
+    returncode = proc.poll()
     return returncode == 0        
     
 # --------------------------------------------------------------------
@@ -117,11 +118,13 @@ class MediaPlayer(abc.ABC) :
 
     def __init__(self, *args, **kwargs) :
         options = {
-            'console' : False
+            'console' : False,
+            'fullscreen' : False
         }
         options.update(kwargs)
         self.console = options['console']
-        self.options = []
+        self.fullscreen = options['fullscreen']
+        self._options = []
 
     @classmethod
     def getList(cls) :
@@ -138,9 +141,21 @@ class MediaPlayer(abc.ABC) :
 
         return cls(id='dummy')
 
+    @property
+    def options(self) :
+        return self._options
+
     def add_options(self, *options) :
-        self.options.extend(options)
-        
+        self._options.extend(options)
+
+    def remove_options(self, *options) :
+        for option in options :
+            try :
+                ix = self._options.index(option)
+                self._options.pop(ix)
+            except ValueError as e :
+                pass
+
     @abc.abstractmethod
     def play(self, title, video_uri) :
         pass
@@ -148,7 +163,7 @@ class MediaPlayer(abc.ABC) :
     @abc.abstractmethod
     def check(self) :
         pass
-    
+
 # --------------------------------------------------------------------
 
 class Player_dummy(MediaPlayer) :
@@ -185,6 +200,10 @@ class Player_mpv(MediaPlayer) :
         self.init_mpv_options(options)
 
     @property
+    def options(self) :
+        return self.mpv_options.options
+
+    @property
     def mpv_options(self) :
         return self._mpv_options
 
@@ -196,12 +215,20 @@ class Player_mpv(MediaPlayer) :
         self.mpv_options.set_formats(options.get('ytdlfmt','ytdl'))
         self.mpv_options.set_raw_options('format-sort', options.get('fmtsort','hasvid'))
 
+    def add_options(self, *options) :
+        self.mpv_options.set_options(*options)
+
+    def remove_options(self, *options) :
+        self.mpv_options.clear_options(*options)
+
     def play(self, title, video_uri) :
         command = [ self.program ]
         if title :
             command.append(f'--title={title}')
         command.append(video_uri)
-        command[1:1] = self.mpv_options.options
+        if self.fullscreen :
+            command[1:1] = ['--fs']
+        command[1:1] = self.options
         return popen_player(command, self.console)
 
     def check(self) :
@@ -244,6 +271,8 @@ class Player_ffplay(MediaPlayer) :
             '-loglevel', 'quiet',
             '-i', video_uri   
         ]
+        if self.fullscreen :
+            command[1:1] = ['-fs']
         command[1:1] = self.options
         return popen_player(command, self.console)
 
@@ -268,6 +297,8 @@ class Player_vlc(MediaPlayer) :
             video_uri,
             'vlc://quit'
         ]
+        if self.fullscreen :
+            command[1:1] = ['--fullscreen']
         command[1:1] = self.options
         return popen_player(command, self.console)
 
