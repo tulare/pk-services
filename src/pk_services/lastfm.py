@@ -198,8 +198,9 @@ class Playlist :
             pass
 
     def play(self, ie_result, height=1080) :
-        self._mpv.options.clear()
-        self._mpv.add_options(f'--ytdl-format=bestvideo[height<={height}]+bestaudio/best[height<={height}]')        
+        #self._mpv.options.clear()
+        #self._mpv.add_options(f'--ytdl-format=bestvideo[height<={height}]+bestaudio/best[height<={height}]')        
+        self._mpv.mpv_options.set_raw_options('format-sort', f'res:{height},+tbr')
         try :
             info_dict = self.info(ie_result)
             p = self._mpv.play(info_dict['title'], info_dict['webpage_url'])
@@ -235,10 +236,12 @@ class Playlist :
                     pass
 
     def play_m3u(self, name='playlist', height=1080, shuffle=False) :
-        self._mpv.options.clear()
-        self._mpv.add_options(f'--ytdl-format=bestvideo[height<={height}]+bestaudio/best[height<={height}]')
+        #self._mpv.options.clear()
+        #self._mpv.add_options(f'--ytdl-format=bestvideo[height<={height}]+bestaudio/best[height<={height}]')
+        self._mpv.mpv_options.set_raw_options('format-sort', f'res:{height},+tbr')
         if shuffle :
-            self._mpv.add_options(f'--shuffle')
+            # self._mpv.add_options(f'--shuffle')
+            self._mpv.add_options(f'shuffle')
         p = self._mpv.play('', f'data/{name}.m3u')
         p.wait()
 
@@ -247,10 +250,15 @@ class Playlist :
         self.play_m3u('cache_playlist', height, shuffle)
             
     def play_auto(self, start=0, end=100, height=1080, shuffle=False) :
-        self._mpv.options.clear()
-        self._mpv.add_options(f'--ytdl-raw-options=playlist-items={start}:{end}')
-        self._mpv.add_options(f'--ytdl-format=bestvideo[height<={height}]+bestaudio/best[height<={height}]')
+        #self._mpv.options.clear()
+        #self._mpv.add_options(f'--ytdl-raw-options=playlist-items={start}:{end}')
+        #self._mpv.add_options(f'--ytdl-format=bestvideo[height<={height}]+bestaudio/best[height<={height}]')
+        self._mpv.mpv_options.set_raw_options(
+            'playlist-items', f'{start}:{end}',
+            'format-sort', f'res:{height},+tbr'
+        )
         if shuffle :
-            self._mpv.add_options(f'--shuffle')
+            # self._mpv.add_options(f'--shuffle')
+            self._mpv.add_options(f'shuffle')
         p = self._mpv.play('', self.url)
         p.wait()
