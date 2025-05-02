@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pk-services"
+authors = [
+  { name="Tulare Regnus", email="tulare.paxgalactica@gmail.com" },
+]
+description = "Various services for python projects"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "requests[socks]>= 2.32.3",
+    "lxml >= 5.4.0",
+    "yt-dlp >= 2025.3.31"
+]
+keywords = ["python","service","web"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Topic :: Utilities :: Services"
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/tulare/pk-services"
+
+[tool.setuptools.dynamic]
+version = {attr = "pk_services.__version__"}

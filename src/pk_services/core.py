@@ -1,8 +1,12 @@
-__all__ = [ 'Tor', 'Service' ]
+# -*- coding: utf-8 -*-
 
 import os
 import socks
 import socket
+
+__all__ = [ 'Tor', 'Service' ]
+
+# ---
 
 class Tor :
     enabled = False
@@ -22,6 +26,8 @@ class Tor :
         del os.environ['HTTP_PROXY']
         del os.environ['HTTPS_PROXY']
         cls.enabled = False
+
+# ---
 
 class Service :
     """

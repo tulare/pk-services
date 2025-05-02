@@ -1,4 +1,4 @@
-__all__ = [ 'DomainParserConfig', 'CharsetHTMLParser', 'ImageLinkHTMLParser', 'MediaHMTLParser' ]
+# -*- coding: utf-8 -*-
 
 # logging
 import logging
@@ -10,6 +10,8 @@ import pathlib
 import urllib.parse
 import html.parser
 import lxml.etree
+
+__all__ = [ 'DomainParserConfig', 'CharsetHTMLParser', 'ImageLinkHTMLParser', 'MediaHMTLParser' ]
 
 # --------------------------------------------------------------------
 

@@ -1,8 +1,7 @@
-include README.md
-include LICENSE
+graft src
+graft tests
+graft docs
+
 include tox.ini
 
-recursive-include tests *
-recursive-exclude * __pycache__ *.py[co] desktop.ini
-
-recursive-include docs *.rst conf.py Makefile make.bat *.jpg *.png *.gif
+global-exclude *~ *.py[cod] *.so

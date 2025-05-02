@@ -1,4 +1,4 @@
-__all__ = [ 'YoutubeService' ]
+# -*- coding: utf-8 -*-
 
 # logging
 import logging
@@ -10,6 +10,8 @@ import yt_dlp as youtube_dl
 
 from .core import Service
 from .exceptions import ServiceError
+
+__all__ = [ 'YoutubeService' ]
 
 # --------------------------------------------------------------------
 

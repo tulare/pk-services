@@ -1,4 +1,4 @@
-__all__ = [ 'Playlist' ]
+# -*- coding: utf-8 -*-
 
 # logging
 import logging
@@ -13,6 +13,8 @@ from yt_dlp.utils import DownloadError, ExtractorError
 from .players import MediaPlayer
 from .web import WebService
 from .parsers import CharsetHTMLParser
+
+__all__ = [ 'Playlist' ]
 
 # ------------------------------------------------------------------------------
 
